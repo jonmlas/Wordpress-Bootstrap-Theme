@@ -1,39 +1,27 @@
-<!DOCTYPE html>
-<html <?php language_attributes(); ?>>
-<head>
-    <meta charset="<?php bloginfo('charset'); ?>">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php wp_title(); ?></title>
-    <?php wp_head(); ?>
-</head>
-<body <?php body_class(); ?>>
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="<?php echo home_url(); ?>"><?php bloginfo('name'); ?></a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <?php
-                wp_nav_menu(array(
-                    'theme_location' => 'primary',
-                    'class' => 'navbar-nav'
-                ));
-                ?>
-            </div>
-        </nav>
-    </header>
+<?php
+/**
+ * Template Name: Blog Index
+ * Description: The template for displaying the Blog index /blog.
+ *
+ */
 
-    <main>
-        <?php
-        if (have_posts()) :
-            while (have_posts()) : the_post();
-                the_content();
-            endwhile;
-        else :
-            echo '<p>No content found</p>';
-        endif;
-        ?>
-    </main>
+get_header();
 
-    <?php get_footer(); ?>
+$page_id = get_option( 'page_for_posts' );
+?>
+<div class="row">
+	<div class="col-md-12">
+		<?php
+			echo apply_filters( 'the_content', get_post_field( 'post_content', $page_id ) );
+
+			edit_post_link( __( 'Edit', 'zg' ), '<span class="edit-link">', '</span>', $page_id );
+		?>
+	</div><!-- /.col -->
+	<div class="col-md-12">
+		<?php
+			get_template_part( 'archive', 'loop' );
+		?>
+	</div><!-- /.col -->
+</div><!-- /.row -->
+<?php
+get_footer();

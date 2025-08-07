@@ -526,7 +526,7 @@ function main_table($atts = array()) {
 	</div>'; */
 	
 	$output = '	
-	<span class="affiliate-disclosure"><a href="'.get_site_url().'/affiliate-disclosure/"><i class="fas fa-bell"></i> ' . __(' Affiliate Discloure', 'zg') . '</a></span>
+	<span class="affiliate-disclosure"><a href="'.get_site_url().'/affiliate-disclosure/"><i class="fas fa-bell"></i> ' . __(' Affiliate Disclosure', 'zg') . '</a></span>
 	<div class="reviews-table">';
 	
     while ($wp_query->have_posts()) {
@@ -769,7 +769,11 @@ add_shortcode('compare_reviews', 'compare_reviews_shortcode');
 // Unyson Option
 function unyson_option($atts) {
 	$review = lastimosa_get_post_option( get_the_ID(), 'review_options' );
-	return $review[$atts['field']];
+	if (isset($atts['field']) && isset($review[$atts['field']])) {
+		return esc_html($review[$atts['field']]);
+	} else {
+		return '';
+	}
 }
 add_shortcode( 'unyson-option', 'unyson_option');
 

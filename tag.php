@@ -23,6 +23,6 @@ else :
 	get_template_part( 'content', 'none' );
 endif;
 
-wp_reset_postdata(); // End of the loop.
+// End of the loop.
 
 get_footer();

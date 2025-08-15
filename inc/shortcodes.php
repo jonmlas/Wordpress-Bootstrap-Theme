@@ -1,187 +1,4 @@
 <?php
-/*
-// https://stackoverflow.com/questions/13184085/is-it-possible-to-nest-wordpress-shortcodes-that-are-the-same-shortcode
-function counter_suffix_to_nested_shortcodes($content, $nested_shortcodes = []) {
-	// Define the regular expression pattern for the shortcodes
-	$pattern = '/(\[\/?[a-zA-Z0-9\-\_]+(?: [^\]]+)?(?:_\d+)?\])/is';
-
-	// Define a function to handle the replacements
-	$callback = function ($matches) use (&$suffixStack, &$nested_shortcodes) {
-
-		// get tag name
-		$tag = $matches[0];
-		$pattern = '/\[\/?([A-Za-z0-9\-\_]+)/';
-		preg_match($pattern, $tag, $tagNameMatches);
-		$tag_name = $tagNameMatches[1];
-		$last_tag='';
-		//$suffixStack=[];
-		$suffixCounter = 0;
-
-		// not in array of shortcode type: return shortcode as it is
-		if (!in_array($tag_name, $nested_shortcodes)) {
-			return $tag;
-		}
-
-		// Extract the shortcode name 
-		preg_match($pattern, $tag, $tagNameMatches);
-		$shortcode_name = $tagNameMatches[1];
-
-
-		// Check if it's a closing tag
-		if (strpos($tag, '/' . $tag_name) !== false) {
-			$suffix = array_pop($suffixStack);
-			// Ensure the suffix is correctly placed in the closing tag
-			if ($suffix > 0) {
-				$tag = str_replace(['[/', ']'], ['[/', '_' . $suffix . ']'], $tag);
-				$last_tag = "[$tag_name]";
-			}
-		} else {
-			// Only increment suffixCounter if it's not previous tag and suffixStack is not empty/reset
-			if ( !empty($suffixStack) && $tag_name != $last_tag) {
-				$suffixCounter = count($suffixStack);
-			} else {
-				//reset counter
-				$suffixCounter = 0;
-				$suffixStack = [];
-			}
-
-			$suffixStack[] = $suffixCounter;
-
-			// get new shortcode retaining all attributes
-			$suffix = $suffixCounter > 0 ? '_' . $suffixCounter : '';
-			$tag = str_replace('[' . $shortcode_name, '[' . $shortcode_name . $suffix, $tag);
-
-		}
-
-		return $tag;
-	};
-
-	// Initialize the suffix stack and counter
-	$suffixStack = [];
-
-	// Perform the replacement using the callback function
-	$content = preg_replace_callback($pattern, $callback, $content);
-
-	return $content;
-}
-
-// pereprocess content: don't wrap shortcodes
-function sanitize_nested_shortcodes($content)  {
-	global $nested_shortcodes;
-
-	// unwrap shortcodes in p tags
-	$replace = [
-		'<p>[' => '[',
-		']</p>' => ']',
-		'</p>[' => '[',
-		']<br />' => ']',
-		'&#8220;' => '"',
-		'&#8217;' => '"',
-		'&#8216;' => '"',
-		'&#8243;' => '"'
-	];
-	// add index suffixes to nested shortcodes
-	$content = counter_suffix_to_nested_shortcodes(strtr($content, $replace), $nested_shortcodes);
-
-	return $content;
-}
-add_filter('the_content', 'sanitize_nested_shortcodes'); 
-*/
-
-function zg_section($atts, $content = null) {
-    $atts = shortcode_atts(
-        array(
-            'id'    => '',
-            'class' => '',
-            'gutter' => 'gx-1',
-            'row_class' => '',
-        ),
-        $atts,
-        'bs_section'
-    );
-
-    $id = !empty(esc_html($atts['id'])) ? ' id="' . esc_html($atts['id']) . '"' : '';
-    $class = !empty(esc_html($atts['class'])) ? ' class="' . esc_html($atts['class'])  . '"' : '';
-    $gutter = ' ' . esc_html($atts['gutter']);
-    $row_class = !empty(esc_html($atts['row_class'])) ? ' ' . esc_html($atts['row_class']) : '';
-
-    // Check if 'container' is in the class list
-    $has_container = strpos($class, 'container') !== false;
-
-    // Use output buffering to capture the content
-    ob_start();
-    ?>
-    <section<?php echo $id; ?><?php echo $class; ?>>
-        <?php if ($has_container) : ?>
-            <div class="row<?php echo $row_class . $gutter; ?>">
-                <?php echo do_shortcode($content); ?>
-            </div>
-        <?php else : ?>
-            <?php echo do_shortcode($content); ?>
-        <?php endif; ?>
-    </section>
-    <?php
-    // Get the buffered content and clean the buffer
-    $output = ob_get_clean();
-
-    return $output;
-}
-add_shortcode('bs_section', 'zg_section');
-
-
-
-function render_row($atts, $content) {
-    $atts = shortcode_atts(
-        array(
-            'id'        => '',
-            'class'     => '',
-            'gutter'    => 'gx-1',
-            'class' => '',
-        ),
-        $atts
-    );
-    $id        = !empty(esc_html($atts['id'])) ? 'id="'.esc_html($atts['id']).'"' : '';
-    $class     = !empty(esc_html($atts['class'])) ? ' '.esc_html($atts['class']) : '';
-    $gutter    = ' '.esc_html($atts['gutter']);
-    $row_class = !empty(esc_html($atts['class'])) ? ' '.esc_html($atts['class']) : '';
-
-    return '<div class="row' . $gutter . $row_class . '">' . do_shortcode($content) . '</div>';
-}
-
-function zg_row($atts, $content = null) {
-    return render_row($atts, $content);
-}
-add_shortcode('bs_row', 'zg_row');
-
-function zg_row_child($atts, $content = null) {
-    return render_row($atts, $content);
-}
-add_shortcode('bs_row_child', 'zg_row_child');
-
-
-
-function render_column($atts, $content) {
-    $atts = shortcode_atts(
-        array(
-            'col' => '12',
-            'class'=> '',
-        ),
-        $atts
-    );
-    $class = !empty(esc_html($atts['class'])) ? ' '.esc_html($atts['class']) : '';
-
-    return '<div class="col-md-' . esc_html($atts['col']) . $class . '">' . do_shortcode($content) . '</div>';
-}
-
-function zg_column($atts, $content = null) {
-    return render_column($atts, $content);
-}
-add_shortcode('bs_column', 'zg_column');
-
-function zg_column_child($atts, $content = null) {
-    return render_column($atts, $content);
-}
-add_shortcode('bs_column_child', 'zg_column_child');
 
 
 
@@ -192,7 +9,7 @@ add_shortcode('bs_column_child', 'zg_column_child');
  * to allow 20 nesting levels 
  */
 /*
-$nested_shortcodes = ['bs_column'];
+$nested_shortcodes = ['column'];
 $nesting_max = 20;
 
 // duplicate shortcodes
@@ -404,254 +221,50 @@ function post_navigation_shortcode() {
 add_shortcode('post_navigation', 'post_navigation_shortcode');
 
 
-// Bootstrap Buttons
-function bootstrap_button($atts) {
-	// Default attributes
-	$atts = shortcode_atts(
-		array(
-			'text' => 'Click me',          // Button text
-			'color' => '',          		// Button color (primary, secondary, success, etc.)
-			'size' => 'sm',                  // Button size (sm, lg)
-			'outline' => 'false',          // Outline button (true, false)
-			'tags' => '',                  // Additional tags (e.g., data-toggle="modal" data-target="#myModal")
-			'disabled' => 'false',         // Disabled state (true, false)
-			'width' => '',                 // Custom width (e.g., 100px, 50%)
-			'toggle' => '',                // Toggle states (e.g., data-bs-toggle="button")
-			'id' => '',                    // Button ID
-			'class' => '',                 // Additional classes
-			'url' => '',                   // Button URL
-			'target' => '',                // Link target (_blank, _self, etc.)
-		), $atts, 'bootstrap_button'
-	);
-
-	// Build the button class
-	$button_class = 'btn';
-	$button_class .= $atts['outline'] === 'true' ? ' btn-outline-' . $atts['color'] : ' btn-' . $atts['color'];
-	$button_class .= !empty($atts['size']) ? ' btn-' . $atts['size'] : '';
-	$button_class .= !empty($atts['class']) ? ' ' . $atts['class'] : '';
-
-	// Build the disabled attribute
-	$disabled_attr = $atts['disabled'] === 'true' ? ' disabled' : '';
-
-	// Build the width style
-	$width_style = !empty($atts['width']) ? ' style="width:' . esc_attr($atts['width']) . ';"' : '';
-
-	// Build the ID attribute
-	$id_attr = !empty($atts['id']) ? ' id="' . esc_attr($atts['id']) . '"' : '';
-
-	// Build the target attribute
-	$target_attr = !empty($atts['target']) ? ' target="' . esc_attr($atts['target']) . '"' : '';
-
-	// Determine the tag to use
-	$tag = !empty($atts['url']) ? 'a' : 'button';
-
-	// Build the button HTML
-	$button_html = '<' . $tag . ' href="' . esc_url($atts['url']) . '" class="' . esc_attr($button_class) . '"' . $id_attr . $disabled_attr . $width_style . $target_attr;
-
-	// Add any additional tags
-	if (!empty($atts['tags'])) {
-		$button_html .= ' ' . $atts['tags'];
-	}
-
-	// Add toggle attributes
-	if (!empty($atts['toggle'])) {
-		$button_html .= ' ' . $atts['toggle'];
-	}
-
-	// Close the opening tag and add the button text
-	$button_html .= '>' . esc_html($atts['text']) . '</' . $tag . '>';
-
-	return $button_html;
-}
-	
-add_shortcode('bs_button', 'bootstrap_button');
-
-
-
-// Main Table shortcode
-function main_table($atts = array()) {
-
-	extract(shortcode_atts(array(
-		'slugs' => '',
-		'cat' 	=> '',
-		'count' => '-1',
-		'ctr'	=> '0',
-		'offset' => '0'
-	), $atts));
-
-	// Convert comma-separated slugs to an array
-	$slugs = isset($atts['slugs']) ? explode(',', $atts['slugs']) : '';
-	$count = isset($atts['count']) ? absint($atts['count']) : -1;
-	$ctr = isset($atts['ctr']) ? absint($atts['ctr']) : 1;
-	
-	global $post;
-	$args = array(
-		'post_status' => 'publish',
-		'posts_per_page' => $count,
-		'post_type' => 'review',
-		'ignore_sticky_posts' => true,
-		'offset' => $offset,
-	);
-	if(!empty($slugs)) {
-		$args = array(
-			'post_name__in' => $slugs,
-			'orderby' => 'post_name__in',  // Maintain the order of IDs specified
-		);
-	}
-	if(isset($atts['cat'])) {
-
-			$cat_array = array(
-				'tax_query' => array(
-					array(
-						'taxonomy' => 'review-category',   // taxonomy name
-						'field' => 'slug',           // term_id, slug or name
-						'terms' => $atts['cat'],         // term id, term slug or term name
-					)
-				)
-			);
-			$args = array_merge($args,$cat_array); 
-
-	}
-    $wp_query = new WP_Query( $args );
-
-	/*
-	$output = '
-	
-	<div>
-		<ul class="table-icon">
-		<li class="uk-provided">UK Licensed</li>
-		<li class="safe-secure">SAFE & SECURE</li>
-		<li class="trusted-reviews">Trusted Reviews</li>
-		</ul>
-	</div>'; */
-	
-	$output = '	
-	<span class="affiliate-disclosure"><a href="'.get_site_url().'/affiliate-disclosure/"><i class="fas fa-bell"></i> ' . __(' Affiliate Disclosure', 'zg') . '</a></span>
-	<div class="reviews-table">';
-	
-    while ($wp_query->have_posts()) {
-        $wp_query->the_post();
-		$review = lastimosa_get_post_option( get_the_ID(), 'review_options' );
-		if(!empty($review['logo_bg_color'])) {
-			$logo_background_color = ' style="background-color:'.$review['logo_bg_color'].'"';
-		}else{
-			$logo_background_color = '';
-		}
-		if ( has_post_thumbnail() ) { 
-			$review_thumbnail = '<a href="'.$review['affiliate_link'].'" class="logo-wrap hvr-grow" target="_blank"'.$logo_background_color.'>
-				<span>'. get_the_title(get_the_ID()).'</span>'
-				.get_the_post_thumbnail( get_the_ID(), "main-table-logo", array( "alt" => get_the_title(), "class" => "logo img-fluid hvr-grow" ) ).
-			'</a>';
-		}else{ 
-			$review_thumbnail = '<p class="entry-title"><a href="'.get_the_permalink().'"'.$logo_background_color.'>'.get_the_title().'</a></p>';
-		} 
-		$bonus = '';
-		if(!empty($review['bonus'])) {
-			$bonus = '<div class="bonus">' . $review['bonus'] . '</div>';
-		}
-		
-		if(!empty($review['terms'])) { 
-		/*	
-		$terms = '<p class="terms-conditions"> <a href="#" class="tooltip" data-tooltip-content="#tooltip_content_' . get_the_ID() . '">' . __('Terms Apply','bestratedslots') . '</a>'.'</p>
-		<!--googleoff: index-->
-		<div class="tooltip_templates">
-			<div id="tooltip_content_'.get_the_ID().'">
-				<div class="m-b-10">' . $review['terms'] . '</div>
-				<a class="btn btn-secondary btn-xs btn-icon font-weight-normal" href="'.$review['affiliate_link'].'" role="button" target="_blank">Claim Bonus <span class="ico-right"><i class="ico ico-caret-right"></i></span></a>
-			</div>
-		</div>
-		<!--googleon: index-->';  */
-			$terms = $review['terms'];
-		} else {
-			$terms = __('UK players accepted, terms apply, 18+','zg');
-		} 
-		if(!empty($review['attributes'])){
-			$list = explode(", ", $review['attributes']);
-			ob_start(); // Start output buffering
-			?>
-			<ul>
-			<?php foreach ($list as $item) { ?>
-				<li><?php echo $item; ?></li>
-			<?php } ?>
-			</ul>
-			<?php
-			$attributes = ob_get_clean(); // Store the buffered output in a variable
-		}else{
-			$attributes = '';
-		}
-		$output.= '
-		<div class="table-row">
-			<div class="info">
-				<div class="col"><span class="counter">'.$ctr.'</span>'
-					.$review_thumbnail.
-					'<div class="rating"><i class="fa fa-star" aria-hidden="true"></i> '.$review['rating'] . '/5'.'</div>
-					
-				</div>
-				<div class="col">
-					<div class="expert-info"><span class="expert-reviewed"><i></i> '.__('Expert Reviewed','zg').'</span> <span class="fact-checked"><i></i> '.__('Fact Checked','zg').'</span></div>
-					<div class="title">'.get_the_title(get_the_ID()).'</div>'
-					.$bonus.
-				'<div class="attributes">'.
-						$attributes.
-					'		
-					</div>
-					
-				</div>
-				<div class="col">				
-					<div class="play-now">
-						<a class="btn" href="'.$review['affiliate_link'].'" target="_blank">
-							'.__('Visit Site','lastimosa').'
-						</a>
-					</div>
-					<div><a href="'.get_the_permalink(get_the_ID()).'" class="read-review">'.__('Review','zg').'</a></div>
-					
-				</div>
-			</div>
-			<hr />
-			<div class="terms-conditions">
-				<img src="'. get_stylesheet_directory_uri() . '/images/united-kingdom.svg" class="flag alignleft" alt="United Kingdom flag" width="35" height="30">'.
-				$terms.
-			'</div>
-			
-		</div>';
-		$ctr++;
-    }
-	
-	$output .= '</div>';
-    wp_reset_postdata();
-    return $output;
-}
-add_shortcode( 'main-table', 'main_table' );
-
 // Reviews Table Heading shortcode
 function reviews_table_heading() {
+// Get post ID
+$post_id = get_the_ID();
+
+// Get all fields
+$rating            = carbon_get_post_meta($post_id, 'rating');
+$affiliate_link    = carbon_get_post_meta($post_id, 'affiliate_link');
+$bonus             = carbon_get_post_meta($post_id, 'bonus');
+$stats             = carbon_get_post_meta($post_id, 'stats');
+$pros              = carbon_get_post_meta($post_id, 'pros');
+$cons              = carbon_get_post_meta($post_id, 'cons');
+$terms             = carbon_get_post_meta($post_id, 'terms');
+$summary           = carbon_get_post_meta($post_id, 'summary');
+$pros_summary      = carbon_get_post_meta($post_id, 'pros_summary');
+$cons_summary      = carbon_get_post_meta($post_id, 'cons_summary');
+$logo_bg_color     = carbon_get_post_meta($post_id, 'logo_bg_color');
+
 $output = '	
 	<div class="reviews-table">';
-		$review = lastimosa_get_post_option( get_the_ID(), 'review_options' );
-		if(!empty($review['logo_bg_color'])) {
-			$logo_background_color = ' style="background-color:'.$review['logo_bg_color'].'"';
+		if($logo_bg_color) {
+			$logo_background_color = ' style="background-color:'.esc_attr($logo_bg_color).'"';
 		}else{
 			$logo_background_color = '';
 		}
-		if ( has_post_thumbnail() ) { 
-			$review_thumbnail = '<a href="'.$review['affiliate_link'].'" class="logo-wrap hvr-grow" target="_blank"'.$logo_background_color.'>
+		if( has_post_thumbnail() ) { 
+			$review_thumbnail = '<a href="'.esc_url($affiliate_link).'" class="logo-wrap hvr-grow" target="_blank"'.$logo_background_color.'>
 				<span>'. get_the_title(get_the_ID()).'</span>'
 				.get_the_post_thumbnail( get_the_ID(), "main-table-logo", array( "alt" => get_the_title(), "class" => "logo img-fluid hvr-grow" ) ).
 			'</a>';
 		}else{ 
 			$review_thumbnail = '<p class="entry-title"><a href="'.get_the_permalink().'"'.$logo_background_color.'>'.get_the_title().'</a></p>';
 		} 
-		$bonus = '';
-		if(!empty($review['bonus'])) {
-			$bonus = '<div class="bonus">' . $review['bonus'] . '</div>';
-		}
+
+		if($bonus):
+			$bonus = '<div class="bonus">' . esc_html($bonus) . '</div>';
+		endif;
 		
-		if(!empty($review['terms'])) { 
-			$terms = $review['terms'];
-		} else {
+		if($terms):
+			$terms = wp_kses_post($terms);
+		else:
 			$terms = __('UK players accepted, terms apply, 18+','zg');
-		} 
-		if(!empty($review['attributes'])){
+		endif; 
+		/*if(!empty($review['attributes'])){
 			$list = explode(", ", $review['attributes']);
 			ob_start(); // Start output buffering
 			?>
@@ -664,29 +277,23 @@ $output = '
 			$attributes = ob_get_clean(); // Store the buffered output in a variable
 		}else{
 			$attributes = '';
-		}
+		}*/
 		$output.= '
 		<div class="table-row">
 			<div class="info">
 				<div class="col">'
 					.$review_thumbnail.
-					'<div class="rating"><i class="fa fa-star" aria-hidden="true"></i> '.$review['rating'] . '/5'.'</div>
+					'<div class="rating"><i class="fa fa-star" aria-hidden="true"></i> '. esc_html($rating) . '/5'.'</div>
 					
 				</div>
 				<div class="col">
 					<div class="expert-info"><span class="expert-reviewed"><i></i> '.__('Expert Reviewed','zg').'</span> <span class="fact-checked"><i></i> '.__('Fact Checked','zg').'</span></div>
-					'
-					.$bonus.
-				'<div class="attributes">'.
-						$attributes.
-					'		
-					</div>
-					
-				</div>
+					'.$bonus.
+				'</div>
 				<div class="col">				
 					<div class="play-now">
-						<a class="btn" href="'.$review['affiliate_link'].'" target="_blank">
-							'.__('Visit Site','lastimosa').'
+						<a class="btn" href="'.esc_url($affiliate_link).'" target="_blank">
+							'.__('Visit Site','zg').'
 						</a>
 					</div>
 				
@@ -695,7 +302,7 @@ $output = '
 			</div>
 			<hr />
 			<div class="terms-conditions">
-				<img src="'. get_stylesheet_directory_uri() . '/images/united-kingdom.svg" class="flag alignleft" alt="United Kingdom flag" width="35" height="30">'.
+				<img src="'. get_stylesheet_directory_uri() . '/assets/images/united-kingdom.svg" class="flag alignleft" alt="United Kingdom flag" width="35" height="30">'.
 				$terms.
 			'</div>
 			
@@ -766,184 +373,15 @@ function compare_reviews_shortcode($atts) {
 }
 add_shortcode('compare_reviews', 'compare_reviews_shortcode');
 
-// Unyson Option
-function unyson_option($atts) {
-	$review = lastimosa_get_post_option( get_the_ID(), 'review_options' );
-	if (isset($atts['field']) && isset($review[$atts['field']])) {
-		return esc_html($review[$atts['field']]);
-	} else {
-		return '';
-	}
-}
-add_shortcode( 'unyson-option', 'unyson_option');
 
-// Play Now Button
-function play_now_shortcode() {
-	$review = lastimosa_get_post_option( get_the_ID(), 'review_options' );
-	ob_start(); ?>
-	<div class="play-now">
-		<a class="btn" href="<?php echo $review['affiliate_link']; ?>" target="_blank">
-			Visit Site
-		</a>
-	</div>
-	<?php 
-	$output = ob_get_clean(); 
-	return $output;
-}
-add_shortcode( 'play-now', 'play_now_shortcode');
+
 
 add_shortcode( 'footag', 'wpdocs_footag_func' );
 function wpdocs_footag_func( $atts ) {
 	return ;
 }
 
-// function that runs when shortcode is called
-function author_box($atts = array(), $content = null) { 
-	
-	extract(shortcode_atts(array(
-		'username' => '',
-		'reviewer' => '',
-    ), $atts));
- 
-	global $post;
-	$the_user = get_user_by('login', $username);
-	$the_reviewer = get_user_by('login', $reviewer);
-	$default = '';
-	if(!empty($the_user)) {
-		$the_user_id = $the_user->ID;
-	}else{
-		$the_user_id = get_the_author_meta( 'ID' );
-	}
-	
-	if(!empty($the_reviewer)) {
-		$the_reviewer_id = $the_reviewer->ID;
-	}else{
-		$the_reviewer_id = get_the_author_meta( 'ID' );
-	}
-		
-	$authorname = get_the_author_meta( 'display_name', $the_user_id );
-	$gravatar = get_avatar( get_the_author_meta( 'user_email', $the_user_id ), '60', $default, $authorname, array( 'class' => array( 'alignleft' ) ) );
-	$email = get_the_author_meta( 'email', $the_user_id );
-	$title = get_the_author_meta( 'title', $the_user_id );
-	$description = wpautop(get_the_author_meta('full_bio', $the_user_id ));
-	$icon_email = '<a href="mailto:'.$email.'" target="_blank"><i class="fa fa-envelope"></i></a>';
-	$url = get_the_author_meta('url', $the_user_id);
-	$title = get_the_author_meta('title', $the_user_id);
-	$twitter = get_the_author_meta('twitter', $the_user_id);
-	$linkedin = get_the_author_meta('linkedin', $the_user_id);
-	
-	$icon_url = '';
-	if(!empty($url)) {
-		$icon_url = '<a href="'.$url.'" target="_blank"><i class="fa fa-chrome" aria-hidden="true"></i></a> ';
-	}
 
-	$icon_twitter = '';
-	if(!empty($twitter)) {
-		$icon_twitter = '<a href="'.$twitter.'" target="_blank"><i class="fa fa-twitter-square" aria-hidden="true"></i></a> ';
-	} 
-
-	$icon_linkedin = '';
-	if(!empty($linkedin)) {
-		$icon_linkedin = '<a href="'.$linkedin.'" target="_blank"><i class="fa fa-linkedin-square" aria-hidden="true"></i></a>';
-	}
-	
-	if(!empty($the_reviewer)) {
-		
-		$reviewer_authorname = get_the_author_meta( 'display_name', $the_reviewer_id );
-		$reviewer_gravatar = get_avatar( get_the_author_meta( 'user_email', $the_reviewer_id ), '60', $default, $authorname, array( 'class' => array( 'alignleft' ) ) );
-		$reviewer_email = get_the_author_meta( 'email', $the_reviewer_id );
-		$reviewer_title = get_the_author_meta( 'title', $the_reviewer_id );
-		$reviewer_description = get_the_author_meta('full_bio', $the_reviewer_id );
-		$reviewer_icon_email = '<a href="mailto:'.$email.'" target="_blank"><i class="fa fa-envelope"></i></a>';
-		$reviewer_url = get_the_author_meta('url', $the_reviewer_id);
-		$reviewer_title = get_the_author_meta('title', $the_reviewer_id);
-		$reviewer_twitter = get_the_author_meta('twitter', $the_reviewer_id);
-		$reviewer_linkedin = get_the_author_meta('linkedin', $the_reviewer_id);
-
-		$reviewer_icon_url = '';
-		if(!empty($url)) {
-			$icon_url = '<a href="'.$url.'" target="_blank"><i class="fa fa-chrome" aria-hidden="true"></i></a> ';
-		}
-
-		$reviewer_icon_twitter = '';
-		if(!empty($twitter)) {
-			$icon_twitter = '<a href="'.$twitter.'" target="_blank"><i class="fa fa-twitter-square" aria-hidden="true"></i></a> ';
-		} 
-
-		$reviewer_icon_linkedin = '';
-		if(!empty($linkedin)) {
-			$icon_linkedin = '<a href="'.$linkedin.'" target="_blank"><i class="fa fa-linkedin-square" aria-hidden="true"></i></a>';
-		}
-	
-		$output = '<div class="authors-box">';
-		
-		$output .= '
-		<div class="author-box">
-			<div class="author-box-wrap">
-				<div class="author-box-header">
-					<div class="info-top">'
-						.$gravatar.'
-						<div class="authorname">
-							<a class="vcard author" href="'.get_author_posts_url( $the_user_id ).'" >'.$authorname.'</a>
-						</div>
-						<div class="title text-uppercase">'.$title.'</div>
-					</div>
-					<div class="clearfix"></div>
-				</div>
-				<div class="description">
-				<div>'.$description.'</div>
-				</div>
-			</div> 		
-		</div>'; 
-		/*			<p class="feedback">'.__("Feedback - ","zg"). '<a href="mailto:'.$email.'">'.$email.'</a></p>
-		 <p class="social-media">'.$reviewer_icon_url.$reviewer_icon_twitter.$reviewer_icon_linkedin.'</p> */
-		$output .= '
-		<div class="author-box">
-			<div class="author-box-wrap">
-				<div class="author-box-header">
-					<div class="info-top">'
-						.$reviewer_gravatar.'
-						<div class="authorname">
-							<a class="vcard author" href="'.get_author_posts_url( $the_reviewer_id ).'" >'.$reviewer_authorname.'</a>
-						</div>
-						<div class="title text-uppercase">'.$reviewer_title.'</div>
-					</div>
-					<div class="clearfix"></div>
-				</div>
-				<div class="description">
-				<div>'.$reviewer_description.'</div>
-				</div>
-			</div> 		
-		</div>'; 
-
-		$output .= '</div>';
-		
-	}else{
-		$output = '
-		<div class="author-box">
-			<div class="author-box-wrap">
-				<div class="author-box-header">
-					<div class="info-top">'
-						.$gravatar.'
-						<div class="authorname">
-							<a class="vcard author" href="'.get_author_posts_url( $the_user_id ).'" >'.$authorname.'</a>
-						</div>
-						<div class="title text-uppercase">'.$title.'</div>
-					</div>
-					<div class="clearfix"></div>
-				</div>
-				<div class="description">
-				<div>'.$description.'</div>
-				</div>
-			</div> 		
-		</div>'; 
-	}
-
-	// Output needs to be return
-	return $output;
-} 
-// register shortcode
-add_shortcode('author-box', 'author_box');
 
 
 function author_avatar() {
@@ -1064,35 +502,7 @@ function user_comments_shortcode($atts) {
 add_shortcode('user_comments', 'user_comments_shortcode');
 
 
-function pros_cons_shortcode( $atts ) {
-    // Parse the shortcode attributes
-    $atts = shortcode_atts( array(
-    //    'category' => 'default_category', // Default category if not provided
-    ), $atts, 'pros_cons_shortcode' );
-	$review = lastimosa_get_post_option( get_the_ID(), 'review_options' );
-	$output = '';
-	ob_start(); // Start output buffering ?>
-	<?php if(!empty($review['pros'] || $review['cons'])) { ?>
-	<div class="pros-cons clearfix box">
-		<?php if(!empty($review['pros'])) { ?>
-		<div class="pros card">
-			<h3><i class="fa fa-thumbs-up"></i> Pros</h3>
-			<div class="card-body"><?php echo $review['pros']; ?></div>
-		</div>	
-		<?php } ?>
-		<?php if(!empty($review['cons'])) { ?>
-		<div class="cons card">
-			<h3><i class="fa fa-thumbs-down"></i> Cons</h3>
-			<div class="card-body"><?php echo $review['cons']; ?></div>
-		</div>
-		<?php } ?>
-	</div>
-	<?php } ?>
-	<?php
-	$output = ob_get_clean();
-	return $output;
-}
-add_shortcode( 'pros-cons', 'pros_cons_shortcode' );
+
 
 /*
 function key_features() {
@@ -1586,3 +996,44 @@ function generate_sitemap($atts) {
 
 // Register the shortcode
 add_shortcode('sitemap', 'generate_sitemap');
+
+function zg_display_social_media_links($atts) {
+    $social_networks = array(
+        'facebook'  => 'Facebook',
+        'twitter'   => 'Twitter',
+        'instagram' => 'Instagram',
+        'linkedin'  => 'LinkedIn',
+        'youtube'   => 'YouTube',
+        'tiktok'    => 'TikTok',
+    );
+
+    $heading = get_theme_mod('social_heading_text', 'Follow Us');
+
+	$output  = '<div class="social-media-section">';
+	$output .= '<div class="social-media-container">';
+	if (!empty($heading)) {
+		$output .= '<span class="social-heading">' . esc_html($heading) . '</span>';
+	}
+	
+	$output .= '<ul class="social-media-links">';
+
+    foreach ($social_networks as $key => $label) {
+        $url = get_theme_mod("social_{$key}_url");
+        if (!empty($url)) {
+            $output .= sprintf(
+                '<li><a href="%s" target="_blank" rel="noopener" class="box"><i class="fab fa-%s"></i><span class="sr-only">%s</span></a></li>',
+                esc_url($url),
+                esc_attr($key),
+                esc_html($label)
+            );
+        }
+    }
+
+    $output .= '</ul>';
+    $output .= '</div>'; // Close .social-media-container
+	$output .= '</div>'; // Close .social-media-section
+
+    return $output;
+}
+add_shortcode('social_links', 'zg_display_social_media_links');
+

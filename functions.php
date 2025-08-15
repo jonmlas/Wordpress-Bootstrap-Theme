@@ -34,10 +34,6 @@ function zg_theme_setup() {
 	remove_action( 'enqueue_block_editor_assets', 'wp_enqueue_editor_block_directory_assets' );
 	remove_action( 'enqueue_block_editor_assets', 'gutenberg_enqueue_block_editor_assets_block_directory' );
 
-    // Enqueue Editor Styles.
-    if ( is_admin() ) {
-        wp_enqueue_style( 'editor-style', get_theme_file_uri( 'style-editor.css' ) );
-    }
     //add_action( 'enqueue_block_assets', 'zg_load_editor_styles' );
 
     add_image_size( 'main-table-logo', 320, 220, true ); // (cropped)
@@ -117,17 +113,14 @@ function zg_theme_enqueue_scripts() {
 	);
 	
 	// Enqueue the Font Awesome kit script
-	wp_enqueue_script('font-awesome-kit', 'https://kit.fontawesome.com/9b0e88a93e.js', array(), null, false);
-
-	// Add the crossorigin attribute to the script tag
-	add_filter('script_loader_tag', function($tag, $handle) {
-		if ('font-awesome-kit' !== $handle) {
-			return $tag;
-		}
-		return str_replace(' src', ' crossorigin="anonymous" src', $tag);
-	}, 10, 2);
+	wp_enqueue_style(
+        'font-awesome',
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css',
+        array(),
+        '7.0.0'
+    );
 	
-	wp_enqueue_script( 'scripts', get_theme_file_uri( 'assets/scripts.js' ), array(), $theme_version, true );
+	wp_enqueue_script( 'scripts', get_theme_file_uri( '/assets/js/scripts.js' ), array(), $theme_version, true );
 
 	if ( is_rtl() ) {
 		//wp_enqueue_style( 'rtl', get_theme_file_uri( 'build/rtl.css' ), array(), $theme_version, 'all' );
@@ -136,12 +129,34 @@ function zg_theme_enqueue_scripts() {
 	if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
 		wp_enqueue_script( 'comment-reply' );
 	}
+
+    wp_enqueue_style('zg-theme-style', get_stylesheet_uri());
+
+    // Enqueue Editor Styles.
+    if ( is_admin() ) {
+        wp_enqueue_style( 'editor-style', get_theme_file_uri( 'style-editor.css' ) );
+    }
+
 }
 add_action('wp_enqueue_scripts', 'zg_theme_enqueue_scripts');
 
 define( 'FILTERPRIORITY', 10 );
 add_filter( 'the_content', 'do_shortcode', FILTERPRIORITY );
 add_filter( 'widget_text', 'do_shortcode', FILTERPRIORITY );
+
+
+/**
+ * Load Carbon Fields.
+ *
+ * This is necessary for the theme to function properly.
+ */
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Carbon_Fields\Carbon_Fields;
+
+add_action('after_setup_theme', function () {
+    Carbon_Fields::boot();
+});
 
 
 /**
@@ -192,6 +207,5 @@ function tooltipster() {
 	');
 }
 add_action( 'wp_enqueue_scripts', 'tooltipster', 10 );
-
 
 

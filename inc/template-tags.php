@@ -35,6 +35,38 @@ function zg_post_navigation() {
 }
 endif;
 
+function render_star_rating( $rating ) {
+	$rating = floatval( $rating );
+	$full_stars = floor( $rating );
+	$half_star = ( $rating - $full_stars ) >= 0.5 ? 1 : 0;
+	$empty_stars = 5 - $full_stars - $half_star;
+
+	ob_start(); // Start output buffering
+	echo '<div class="rating">';
+
+	// Full stars
+	for ( $i = 0; $i < $full_stars; $i++ ) {
+		echo '<i class="fa fa-star" aria-hidden="true"></i>';
+	}
+
+	// Half star
+	if ( $half_star ) {
+		echo '<i class="fa fa-star-half-stroke" aria-hidden="true"></i>';
+	}
+
+	// Empty stars
+	for ( $i = 0; $i < $empty_stars; $i++ ) {
+		echo '<i class="fa-regular fa-star" aria-hidden="true"></i>';
+	}
+
+	// Show numeric rating
+	echo ' ' . esc_html( $rating ) . '/5';
+
+	echo '</div>';
+	return ob_get_clean(); // Return buffered output
+}
+
+
 // Post meta info
 if ( ! function_exists( 'zg_posted_on' ) ) :
 function zg_posted_on() {

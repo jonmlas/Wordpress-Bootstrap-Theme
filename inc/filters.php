@@ -370,7 +370,7 @@ function set_default_featured_image() {
     // Check if the current post has a featured image
     if (is_singular() && !has_post_thumbnail($post->ID)) {
         // Get the default image ID by URL
-        $default_image_url = get_template_directory_uri() . '/images/default.jpg';
+        $default_image_url = get_template_directory_uri() . '/assets/images/default.jpg';
         $default_image_id = attachment_url_to_postid($default_image_url);
 
         // If the image is not in the media library, add it
@@ -439,9 +439,6 @@ add_action( 'add_attachment', 'set_image_filename_as_alt_text' );
 
 /**
  * Add a "Thumbnail" column to the post list in the admin area.
- *
- * @param array $columns Existing columns.
- * @return array Modified columns.
  */
 function custom_post_thumbnail_column( $columns ) {
     $new_columns = [];
@@ -459,18 +456,30 @@ function custom_post_thumbnail_column( $columns ) {
 add_filter( 'manage_posts_columns', 'custom_post_thumbnail_column' );
 
 /**
- * Display the featured image in the "Thumbnail" column.
- *
- * @param string $column Column name.
- * @param int    $post_id Post ID.
+ * Display thumbnails (including SVG) in the custom "Thumbnail" column.
  */
-function custom_post_thumbnail_column_content( $column, $post_id ) {
-    if ( 'thumbnail' === $column ) {
-        $thumb = get_the_post_thumbnail( $post_id, [ 120, 80 ] );
-        echo $thumb ?: '—';
+function custom_post_thumbnail_column_content( $column_name, $post_id ) {
+    if ( $column_name === 'thumbnail' ) {
+        $thumb_id = get_post_thumbnail_id( $post_id );
+
+        if ( $thumb_id ) {
+            $mime = get_post_mime_type( $thumb_id );
+            $url  = wp_get_attachment_url( $thumb_id );
+
+            if ( $mime === 'image/svg+xml' ) {
+                // Output inline SVG or fallback <img>
+                echo '<img src="' . esc_url( $url ) . '" style="width:60px; height:auto;" />';
+            } else {
+                // Use standard WP thumbnail
+                echo get_the_post_thumbnail( $post_id, [60, 60] );
+            }
+        } else {
+            echo '—'; // No thumbnail set
+        }
     }
 }
 add_action( 'manage_posts_custom_column', 'custom_post_thumbnail_column_content', 10, 2 );
+
 
 
 // Add extra fields to user profile
@@ -681,3 +690,114 @@ function custom_specific_404_body_class($classes) {
     return $classes;
 }
 add_filter('body_class', 'custom_specific_404_body_class');
+
+
+/**
+ * SVG Upload and Handling Functions
+ *
+ * @param string $word The word to pluralize.
+ * @return string The pluralized word.
+ */
+// Allow SVG Uploads
+function allow_svg_uploads($mimes) {
+    $mimes['svg'] = 'image/svg+xml';
+    return $mimes;
+}
+add_filter('upload_mimes', 'allow_svg_uploads');
+
+// Sanitize SVG on Upload
+function sanitize_svg_on_upload($file) {
+    if (
+        isset($file['type']) &&
+        $file['type'] === 'image/svg+xml' &&
+        isset($file['tmp_name']) &&
+        file_exists($file['tmp_name'])
+    ) {
+        $dirty_svg = file_get_contents($file['tmp_name']);
+
+        // Remove script tags and on* attributes
+        $clean_svg = preg_replace([
+            '#<script(.*?)>(.*?)</script>#is', // remove <script> tags
+            '#on\w+="[^"]*"#i',               // remove on* attributes (e.g., onclick)
+            "#<\?php(.*?)\?>#is",             // remove PHP tags
+        ], '', $dirty_svg);
+
+        // Replace the contents with cleaned SVG
+        file_put_contents($file['tmp_name'], $clean_svg);
+    }
+
+    return $file;
+}
+add_filter('wp_handle_upload_prefilter', 'sanitize_svg_on_upload');
+
+// Allow SVG uploads
+add_filter('upload_mimes', function($mimes) {
+    $mimes['svg']  = 'image/svg+xml';
+    $mimes['svgz'] = 'image/svg+xml';
+    return $mimes;
+});
+
+// Extract dimensions from SVG
+function my_svg_dimensions($file) {
+    $svg = simplexml_load_file($file);
+    if (!$svg) {
+        return [100, 100]; // fallback
+    }
+
+    $attributes = $svg->attributes();
+    $width  = isset($attributes->width)  ? floatval($attributes->width)  : 0;
+    $height = isset($attributes->height) ? floatval($attributes->height) : 0;
+
+    // Fallback to viewBox if width/height missing
+    if ((!$width || !$height) && isset($attributes->viewBox)) {
+        $viewbox = explode(' ', (string) $attributes->viewBox);
+        if (count($viewbox) === 4) {
+            $width  = floatval($viewbox[2]);
+            $height = floatval($viewbox[3]);
+        }
+    }
+
+    return [
+        $width  ?: 100,
+        $height ?: 100
+    ];
+}
+
+// Treat SVG like normal image in metadata
+add_filter('wp_generate_attachment_metadata', function($metadata, $attachment_id) {
+    $mime = get_post_mime_type($attachment_id);
+
+    if ($mime === 'image/svg+xml') {
+        $file = get_attached_file($attachment_id);
+        list($width, $height) = my_svg_dimensions($file);
+
+        $metadata = [
+            'width'  => $width,
+            'height' => $height,
+            'file'   => _wp_relative_upload_path($file),
+            'sizes'  => [] // no raster sizes generated
+        ];
+    }
+
+    return $metadata;
+}, 10, 2);
+
+// Make wp_get_attachment_image() work with SVG
+add_filter('wp_get_attachment_image_src', function($image, $attachment_id, $size, $icon) {
+    $mime = get_post_mime_type($attachment_id);
+
+    if ($mime === 'image/svg+xml') {
+        $file = get_attached_file($attachment_id);
+        list($width, $height) = my_svg_dimensions($file);
+
+        $image = [
+            wp_get_attachment_url($attachment_id),
+            $width,
+            $height,
+            true // is_intermediate
+        ];
+    }
+
+    return $image;
+}, 10, 4);
+// End of SVG upload and handling code

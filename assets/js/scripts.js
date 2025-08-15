@@ -1,3 +1,19 @@
+jQuery(document).ready(function($) {
+    var $header = $("#header");
+    var shrinkOn = 50; // scroll distance in pixels
+
+    $(window).on("scroll", function() {
+        if ($(this).scrollTop() > shrinkOn) {
+            $header.addClass("shrink");
+        } else {
+            $header.removeClass("shrink");
+        }
+    });
+});
+
+
+
+
 // // Show dropdown on hover
 jQuery(document).ready(function($){
 	$('.dropdown').mouseover(function () {
@@ -66,73 +82,7 @@ jQuery(document).ready(function($){
  });
 
 
-jQuery(document).ready(function($) {
-  $(".simple-accordion-set").click(function (e) {
-    e.preventDefault(); // Prevent the default behavior of the click event
-    
-    if ($(this).hasClass("active")) {
-      $(this).removeClass("active");
-      $(this)
-        .children(".simple-accordion-content")
-        .slideUp(200);
-      $(".simple-accordion-set > h3 i")
-        .removeClass("fa-chevron-up")
-        .addClass("fa-chevron-down");
-    } else {
-      $(".simple-accordion-set > h3 i")
-        .removeClass("fa-chevron-up")
-        .addClass("fa-chevron-down");
-      $(this)
-        .find("i")
-        .removeClass("fa-chevron-down")
-        .addClass("fa-chevron-up");
 
-      // Remove 'active' class from siblings
-      $(this).siblings('.simple-accordion-set').removeClass('active');
-
-      $(this).addClass("active");
-      $(".simple-accordion-content").slideUp(200);
-      $(this)
-        .children(".simple-accordion-content")
-        .slideDown(200);
-    }
-    return false;
-  });
-});
-
-jQuery(document).ready(function($) {
-  $(".accordion-set").click(function (e) {
-    e.preventDefault(); // Prevent the default behavior of the click event
-    
-    if ($(this).hasClass("active")) {
-      $(this).removeClass("active");
-      $(this)
-        .children(".accordion-content")
-        .slideUp(200);
-      $(".faqs-accordion-set > h3 i")
-        .removeClass("fa-minus-circle")
-        .addClass("fa-plus-circle");
-    } else {
-      $(".accordion-set > h3 i")
-        .removeClass("fa-minus-circle")
-        .addClass("fa-plus-circle");
-      $(this)
-        .find("i")
-        .removeClass("fa-plus-circle")
-        .addClass("fa-minus-circle");
-
-      // Remove 'active' class from siblings
-      $(this).siblings('.accordion-set').removeClass('active');
-
-      $(this).addClass("active");
-      $(".accordion-content").slideUp(200);
-      $(this)
-        .children(".accordion-content")
-        .slideDown(200);
-    }
-    return false;
-  });
-});
 
 
 jQuery(document).ready(function($) {
@@ -271,3 +221,164 @@ jQuery(document).ready(function($) {
 		}, time);
 	}
 });
+
+
+(function($){
+    if (typeof zgShortcodes !== 'undefined') {
+        zgShortcodes.push({
+            tag: 'accordion',
+            name: 'Accordion',
+            insert: function(editor) {
+                let exampleItems = [
+                    { title: "Accordion Item 1", content: "This is the first item's content." },
+                    { title: "Accordion Item 2", content: "This is the second item's content." }
+                ];
+                let jsonItems = JSON.stringify(exampleItems);
+                editor.insertContent('[accordion items="' + jsonItems.replace(/"/g, '&quot;') + '"]');
+            }
+        });
+    }
+})(jQuery);
+
+
+
+// Initialize all tooltips on the page
+document.addEventListener('DOMContentLoaded', function () {
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+    new bootstrap.Tooltip(tooltipTriggerEl)
+  })
+});
+
+
+
+jQuery(document).ready(function($) {
+
+  /** ---------------------------------
+   *  PAGE LOAD: Animate .bonus numbers
+   *  ---------------------------------
+   */
+  $('.table-row .bonus-text').each(function() {
+    const $bonus = $(this);
+    const originalText = $bonus.text();
+    const regex = /£?\d+/g;
+    const matches = originalText.match(regex);
+    if (!matches) return;
+
+    const numbers = matches.map(numStr => ({
+      original: numStr,
+      isCurrency: numStr.startsWith('£'),
+      target: parseInt(numStr.replace('£', ''), 10),
+      current: 1,
+    }));
+
+    let templatedText = originalText;
+    matches.forEach((m, i) => {
+      templatedText = templatedText.replace(m, `{{${i}}}`);
+    });
+
+    function animateBonus() {
+      let done = true;
+      let newText = templatedText;
+
+      numbers.forEach((num, i) => {
+        if (num.current <= num.target) {
+          done = false;
+          const display = num.isCurrency ? '£' + num.current : num.current;
+          newText = newText.replace(`{{${i}}}`, display);
+          num.current++;
+        } else {
+          newText = newText.replace(`{{${i}}}`, num.original);
+        }
+      });
+
+      $bonus.text(newText);
+
+      if (!done) {
+        requestAnimationFrame(animateBonus);
+      } else {
+        $bonus.addClass('pulse');
+        setTimeout(() => $bonus.removeClass('pulse'), 600);
+      }
+    }
+
+    animateBonus();
+  });
+
+  /** ---------------------------------
+   *  FUNCTION: Animate number in More Info
+   *  ---------------------------------
+   */
+  function animateNumber($el, originalText) {
+    var regex = /(\D*)(\d+)/g;
+    var matches = [];
+    var match;
+
+    while ((match = regex.exec(originalText)) !== null) {
+      matches.push({
+        prefix: match[1] || '',
+        number: parseInt(match[2], 10),
+        index: match.index,
+        length: match[0].length
+      });
+    }
+
+    if (matches.length === 0) {
+      $el.text(originalText);
+      return;
+    }
+
+    var animationsDone = 0;
+
+    matches.forEach(function(m, i) {
+      var startVal = (m.number > 100) ? (m.number - 100) : 1;
+      var currentVal = startVal;
+
+      var maxDuration = 2000;
+      var minInterval = 5;
+      var steps = Math.max(1, m.number - startVal + 1);
+      var intervalDuration = Math.max(minInterval, Math.floor(maxDuration / steps));
+
+      var interval = setInterval(function() {
+        if (currentVal > m.number) {
+          clearInterval(interval);
+          animationsDone++;
+          if (animationsDone === matches.length) {
+            $el.text(originalText);
+            $el.addClass('pulse');
+            setTimeout(function() { $el.removeClass('pulse'); }, 1000);
+          }
+          return;
+        }
+
+        var updatedText = '';
+        var lastPos = 0;
+        for (var j = 0; j < matches.length; j++) {
+          if (j === i) {
+            updatedText += originalText.slice(lastPos, matches[j].index);
+            updatedText += matches[j].prefix + currentVal;
+            lastPos = matches[j].index + matches[j].length;
+          } else {
+            updatedText += originalText.slice(lastPos, matches[j].index + matches[j].length);
+            lastPos = matches[j].index + matches[j].length;
+          }
+        }
+        updatedText += originalText.slice(lastPos);
+
+        $el.text(updatedText);
+        currentVal++;
+      }, intervalDuration);
+    });
+  }
+
+  /** ---------------------------------
+   *  FADE-IN ROWS ON LOAD
+   *  ---------------------------------
+   */
+  $('.table-row').css('opacity', 0).each(function(i) {
+    $(this).delay(i * 300).animate({opacity: 1}, 400);
+  });
+
+});
+
+
